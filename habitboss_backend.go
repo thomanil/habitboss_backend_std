@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 )
 
 type Habit struct {
@@ -13,10 +14,30 @@ type Habit struct {
 	LastPerformed string
 }
 
-func main() {
+func root(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "ROOT: %s!", r.URL.Path[1:])
+}
+
+func showHabits(w http.ResponseWriter, r *http.Request) {
 	habit := exampleHabit()
 	habitJson, _ := asJsonString(habit)
-	fmt.Printf("%#v", habitJson)
+	fmt.Fprintf(w, "%#v", habitJson)
+}
+
+// Rerunning it on the fly:
+
+// go get github.com/pilu/fresh
+// run fresh in this dir to start process that restarts app on each change in go filename
+// (turn off flycheck if it interfers here)
+
+func main() {
+	//habit := exampleHabit()
+	//habitJson, _ := asJsonString(habit)
+	//fmt.Printf("%#v", habitJson)
+
+	http.HandleFunc("/api/allHabits", showHabits)
+	http.HandleFunc("/", root)
+	http.ListenAndServe(":8080", nil)
 }
 
 /* 1. TODO Routing to each endpoint
