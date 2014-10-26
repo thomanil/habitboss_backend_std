@@ -1,8 +1,14 @@
+// Rerunning this on the fly:
+// go get github.com/pilu/fresh
+// run fresh in this dir to start process that restarts app on each change in go filename
+// (turn off flycheck if it interfers here)
+
 package main
 
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"net/http"
 )
@@ -14,45 +20,51 @@ type Habit struct {
 	LastPerformed string
 }
 
+// ROOT
 func root(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "ROOT: %s!", r.URL.Path[1:])
 }
 
+// API
 func showHabits(w http.ResponseWriter, r *http.Request) {
+	// TODO avoid escaped quotes/str literals in json output?
 	habit := exampleHabit()
 	habitJson, _ := asJsonString(habit)
 	fmt.Fprintf(w, "%#v", habitJson)
 }
 
-// Rerunning it on the fly:
+/* TODO Routing to each endpoint
+   Read: GET /api/allHabits
+   Create: PUT /api/habit/?intervalType=0&description="Do the laundry"&lastPerformed="2014-10-10T08:49:53+00:00"
+   Update: POST /api/habit/67&description="Do the laundry"&lastPerformed="2014-10-10T08:49:53+00:00"
+   Delete: DELETE /api/habit/67
+*/
 
-// go get github.com/pilu/fresh
-// run fresh in this dir to start process that restarts app on each change in go filename
-// (turn off flycheck if it interfers here)
-
-func main() {
-	//habit := exampleHabit()
-	//habitJson, _ := asJsonString(habit)
-	//fmt.Printf("%#v", habitJson)
-
-	http.HandleFunc("/api/allHabits", showHabits)
-	http.HandleFunc("/", root)
-	http.ListenAndServe(":8080", nil)
+// WEB
+func webconsole(w http.ResponseWriter, r *http.Request) {
+	// TODO show prettified html representation of habits
+	habit := exampleHabit()
+	t, err := template.ParseFiles("webconsole.html")
+	if err != nil {
+		showErrorPage(w, err)
+		return
+	}
+	err = t.Execute(w, habit)
+	if err != nil {
+		showErrorPage(w, err)
+	}
 }
 
-/* 1. TODO Routing to each endpoint
-// (cut out user/id stuff if too much work)
+func showErrorPage(w http.ResponseWriter, err error) {
+	http.Error(w, err.Error(), http.StatusInternalServerError)
+}
 
-   Read: GET /api/allHabits
-
-   Create: PUT /api/habit/?intervalType=0&description="Do the laundry"&lastPerformed="2014-10-10T08:49:53+00:00"
-
-   Update: POST /api/habit/67&description="Do the laundry"&lastPerformed="2014-10-10T08:49:53+00:00"
-
-   Delete: DELETE /api/habit/67
-
-   (Return url in text for each one)
-*/
+func main() {
+	http.HandleFunc("/", root)
+	http.HandleFunc("/webconsole", webconsole)
+	http.HandleFunc("/api/allHabits", showHabits)
+	http.ListenAndServe(":8080", nil)
+}
 
 // 2. TODO CRUD persistence operations
 
