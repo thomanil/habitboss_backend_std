@@ -40,9 +40,12 @@ func showHabits(w http.ResponseWriter, r *http.Request) {
    Delete: DELETE /api/habit/67
 */
 
+/* TODO Actual persistence behind each endpoint */
+
 // WEB
 func webconsole(w http.ResponseWriter, r *http.Request) {
 	// TODO show prettified html representation of habits
+	// TODO add image/css assets (/public dir? /template dir? Route urls to those assets?)
 	habit := exampleHabit()
 	t, err := template.ParseFiles("webconsole.html")
 	if err != nil {
@@ -66,8 +69,6 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
-// 2. TODO CRUD persistence operations
-
 // http://blog.golang.org/json-and-go
 // One file per habit, or just save/load all of them as a habit array?
 
@@ -75,7 +76,7 @@ func exampleHabit() Habit {
 	return Habit{Id: "12", IntervalType: 0, Description: "Walk the dog", LastPerformed: "2014-10-10T08:49:53+00:00"}
 }
 
-const persistedFilename = "habits.json"
+const persistedFilename string = "habits.json"
 
 func asJsonString(habit Habit) (string, error) {
 	jsonBytes, err := json.Marshal(habit)
