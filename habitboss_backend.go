@@ -20,6 +20,10 @@ type Habit struct {
 	LastPerformed string
 }
 
+func exampleHabit() Habit {
+	return Habit{Id: "12", IntervalType: 0, Description: "Walk the dog", LastPerformed: "2014-10-10T08:49:53+00:00"}
+}
+
 // ROOT
 func root(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "ROOT: %s!", r.URL.Path[1:])
@@ -72,10 +76,6 @@ func main() {
 // http://blog.golang.org/json-and-go
 // One file per habit, or just save/load all of them as a habit array?
 
-func exampleHabit() Habit {
-	return Habit{Id: "12", IntervalType: 0, Description: "Walk the dog", LastPerformed: "2014-10-10T08:49:53+00:00"}
-}
-
 const persistedFilename string = "habits.json"
 
 func asJsonString(habit Habit) (string, error) {
@@ -112,9 +112,3 @@ func loadFromFile() (Habit, error) {
 	//TODO print first, see if it is intact
 	return habit, err
 }
-
-// 3. TODO web console (template + image/css assets)
-
-// 4. TODO Write brief summary of what net/http and friends gives us
-
-// 5. TODO Deploy to a remote server
