@@ -21,9 +21,36 @@ func exampleHabit() Habit {
 	return Habit{Id: 12, IntervalType: "0", Description: "Walk the dog", LastPerformed: "2014-10-10T08:49:53+00:00"}
 }
 
-// ROOT
+func main() {
+	http.HandleFunc("/", root)
+	http.HandleFunc("/webconsole", webconsole)
+	http.HandleFunc("/api/getHabits", getHabits)
+	http.HandleFunc("/api/createHabit", createHabit)
+	http.HandleFunc("/api/updateHabit", updateHabit)
+	http.HandleFunc("/api/deleteHabit", deleteHabit)
+	http.ListenAndServe(":8080", nil)
+}
+
 func root(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "ROOT")
+}
+
+func webconsole(w http.ResponseWriter, r *http.Request) {
+	habits, _ := load()
+
+	t, err := template.ParseFiles("webconsole.html")
+	if err != nil {
+		showErrorPage(w, err)
+		return
+	}
+	err = t.Execute(w, habits)
+	if err != nil {
+		showErrorPage(w, err)
+	}
+}
+
+func showErrorPage(w http.ResponseWriter, err error) {
+	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
 
 // API
@@ -57,6 +84,7 @@ func createHabit(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Example: http://localhost:8080/api/updateHabit?id=27887&description=%22Clean%20the%20bathroom%22&lastPerformed=%222014-10-10T08:49:53+00:00%22
 func updateHabit(w http.ResponseWriter, r *http.Request) {
 	idToUpdate, _ := strconv.Atoi(r.URL.Query().Get("id"))
 	updatedDescription := r.URL.Query().Get("description")
@@ -65,25 +93,24 @@ func updateHabit(w http.ResponseWriter, r *http.Request) {
 	habits, _ := load()
 
 	// Where in the habit list is it?
-	indexOfDeletion := -1
+	indexOfUpdate := -1
 	for index, element := range habits {
 		if element.Id == idToUpdate {
-			indexOfDeletion = index
+			indexOfUpdate = index
 		}
 	}
-
-	if indexOfDeletion == -1 {
+	if indexOfUpdate == -1 {
 		fmt.Println("No habit with id: ", idToUpdate)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	// Update it
-	oldHabit := habits[indexOfDeletion]
+	oldHabit := habits[indexOfUpdate]
 	newHabit := Habit{Id: oldHabit.Id, IntervalType: oldHabit.IntervalType, Description: updatedDescription, LastPerformed: updatedLastPerformed}
 	oldHabit.Description = updatedDescription
 	oldHabit.LastPerformed = updatedLastPerformed
-	habits[indexOfDeletion] = newHabit
+	habits[indexOfUpdate] = newHabit
 
 	err := persist(habits)
 	if err == nil {
@@ -94,7 +121,7 @@ func updateHabit(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Example:    http://localhost:8080/api/deleteHabit?id=98081
+// Example: http://localhost:8080/api/deleteHabit?id=98081
 func deleteHabit(w http.ResponseWriter, r *http.Request) {
 	idToDelete, _ := strconv.Atoi(r.URL.Query().Get("id"))
 
@@ -107,7 +134,6 @@ func deleteHabit(w http.ResponseWriter, r *http.Request) {
 			indexOfDeletion = index
 		}
 	}
-
 	if indexOfDeletion == -1 {
 		fmt.Println("No habit with id: ", idToDelete)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -124,56 +150,6 @@ func deleteHabit(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Error while removing habit: ", idToDelete)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-}
-
-/* TODO Routing to each endpoint
-
-   Read: /currentHabits
-   Create: /createHabit?intervalType=0&description="Do the laundry"&lastPerformed="2014-10-10T08:49:53+00:00"
-   Update: /updateHabit?id=67&description="Do the laundry"&lastPerformed="2014-10-10T08:49:53+00:00"
-   Delete: /deleteHabit?id=67
-
-*/
-
-/*
-TODO gorilla mux:
-prettier routing, match and preserve parts of url, match on methods:
-
-/api/user/23/habit GET, PUT, POST, DELETE
-
-*/
-
-// TODO Add actual persistence behind each endpoint
-
-func main() {
-	http.HandleFunc("/", root)
-	http.HandleFunc("/webconsole", webconsole)
-
-	http.HandleFunc("/api/getHabits", getHabits)
-	http.HandleFunc("/api/createHabit", createHabit)
-	http.HandleFunc("/api/updateHabit", updateHabit)
-	http.HandleFunc("/api/deleteHabit", deleteHabit)
-
-	http.ListenAndServe(":8080", nil)
-}
-
-// WEB
-func webconsole(w http.ResponseWriter, r *http.Request) {
-	habits, _ := load()
-
-	t, err := template.ParseFiles("webconsole.html")
-	if err != nil {
-		showErrorPage(w, err)
-		return
-	}
-	err = t.Execute(w, habits)
-	if err != nil {
-		showErrorPage(w, err)
-	}
-}
-
-func showErrorPage(w http.ResponseWriter, err error) {
-	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
 
 // http://blog.golang.org/json-and-go
