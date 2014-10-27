@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"sort"
 	"strconv"
 )
 
@@ -169,6 +170,20 @@ func dbDelete(id int) error {
 	return persist(habits)
 }
 
+func indexOf(habitId int, habits []Habit) (int, error) {
+	indexOfElement := -1
+	for index, element := range habits {
+		if element.Id == habitId {
+			indexOfElement = index
+		}
+	}
+	if indexOfElement == -1 {
+		return indexOfElement, errors.New("failed to find habit in slice")
+	} else {
+		return indexOfElement, nil
+	}
+}
+
 const persistedFilename string = "habits.json"
 
 func persist(habits []Habit) error {
@@ -186,26 +201,21 @@ func load() ([]Habit, error) {
 	}
 
 	filebodyBytes := []byte(filebody)
-	var habit []Habit
+	var habits []Habit
 
-	err = json.Unmarshal(filebodyBytes, &habit)
+	err = json.Unmarshal(filebodyBytes, &habits)
 	if err != nil {
 		return []Habit{}, err
 	}
 
-	return habit, err
+	sort.Stable(ById(habits)) // ensure stable sorted order by id
+
+	return habits, err
 }
 
-func indexOf(habitId int, habits []Habit) (int, error) {
-	indexOfElement := -1
-	for index, element := range habits {
-		if element.Id == habitId {
-			indexOfElement = index
-		}
-	}
-	if indexOfElement == -1 {
-		return indexOfElement, errors.New("failed to find habit in slice")
-	} else {
-		return indexOfElement, nil
-	}
-}
+// Implement sort-by-id type
+type ById []Habit
+
+func (a ById) Len() int           { return len(a) }
+func (a ById) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ById) Less(i, j int) bool { return a[i].Id < a[j].Id }
