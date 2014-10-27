@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -53,7 +54,7 @@ func showErrorPage(w http.ResponseWriter, err error) {
 	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
 
-// API
+// API ENDPOINTS
 
 // Example: http://localhost:8080/api/getHabits
 func getHabits(w http.ResponseWriter, r *http.Request) {
@@ -92,25 +93,19 @@ func updateHabit(w http.ResponseWriter, r *http.Request) {
 
 	habits, _ := load()
 
-	// Where in the habit list is it?
-	indexOfUpdate := -1
-	for index, element := range habits {
-		if element.Id == idToUpdate {
-			indexOfUpdate = index
-		}
-	}
-	if indexOfUpdate == -1 {
+	i, findErr := indexOf(idToUpdate, habits)
+	if findErr != nil {
 		fmt.Println("No habit with id: ", idToUpdate)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	// Update it
-	oldHabit := habits[indexOfUpdate]
+	oldHabit := habits[i]
 	newHabit := Habit{Id: oldHabit.Id, IntervalType: oldHabit.IntervalType, Description: updatedDescription, LastPerformed: updatedLastPerformed}
 	oldHabit.Description = updatedDescription
 	oldHabit.LastPerformed = updatedLastPerformed
-	habits[indexOfUpdate] = newHabit
+	habits[i] = newHabit
 
 	err := persist(habits)
 	if err == nil {
@@ -127,21 +122,15 @@ func deleteHabit(w http.ResponseWriter, r *http.Request) {
 
 	habits, _ := load()
 
-	// Where in the habit list is it?
-	indexOfDeletion := -1
-	for index, element := range habits {
-		if element.Id == idToDelete {
-			indexOfDeletion = index
-		}
-	}
-	if indexOfDeletion == -1 {
+	i, findErr := indexOf(idToDelete, habits)
+	if findErr != nil {
 		fmt.Println("No habit with id: ", idToDelete)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	// Remove it. Not exactly pretty, but most ideomatic I could find
-	habits = append(habits[:indexOfDeletion], habits[indexOfDeletion+1:]...)
+	habits = append(habits[:i], habits[i+1:]...)
 
 	err := persist(habits)
 	if err == nil {
@@ -152,8 +141,11 @@ func deleteHabit(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// http://blog.golang.org/json-and-go
-// One file per habit, or just save/load all of them as a habit array?
+// PERSISTENCE
+
+func dbGetHabits() ([]Habit, error) {
+	return load()
+}
 
 const persistedFilename string = "habits.json"
 
@@ -180,4 +172,18 @@ func load() ([]Habit, error) {
 	}
 
 	return habit, err
+}
+
+func indexOf(habitId int, habits []Habit) (int, error) {
+	indexOfElement := -1
+	for index, element := range habits {
+		if element.Id == habitId {
+			indexOfElement = index
+		}
+	}
+	if indexOfElement == -1 {
+		return indexOfElement, errors.New("failed to find habit in slice")
+	} else {
+		return indexOfElement, nil
+	}
 }

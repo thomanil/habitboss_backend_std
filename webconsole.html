@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-  <title>HabitBoss console</title>
+    <title>HabitBoss console</title>
   </head>
   <body>
 
@@ -12,6 +12,9 @@
     .timestamp {
       color:gray;
     }
+    .id {
+      color:#9FFF87;
+    }
     </style>
 
     <h1>Current state of my habits:</h1>
@@ -20,7 +23,9 @@
 
     <ul>
 {{range $element := .}}
-      <li>{{ $element.Description }} <em class="timestamp">{{ $element.LastPerformed }}</em></li>
+      <li><span class="id">{{ $element.Id }}</span>
+     {{ $element.Description }}
+      <em class="timestamp">{{ $element.LastPerformed }}</em></li>
 {{ end }}
     </ul>
 
