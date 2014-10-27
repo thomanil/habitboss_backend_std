@@ -1,3 +1,31 @@
-<h1>Current habit state:</h1>
+<!DOCTYPE html>
+<html>
+  <head>
+  <title>HabitBoss console</title>
+  </head>
+  <body>
 
-<h1>Habit id: {{.Id}}</h1>
+
+
+
+    <style>
+    .timestamp {
+      color:gray;
+    }
+    </style>
+
+    <h1>Current state of my habits:</h1>
+
+    <p>Current amount of habits: {{ printf "%v" (len .) }}</p>
+
+    <ul>
+{{range $element := .}}
+      <li>{{ $element.Description }} <em class="timestamp">{{ $element.LastPerformed }}</em></li>
+{{ end }}
+    </ul>
+
+
+
+
+  </body>
+</html>

@@ -1,8 +1,3 @@
-// Rerunning this on the fly:
-// go get github.com/pilu/fresh
-// run fresh in this dir to start process that restarts app on each change in go filename
-// (turn off flycheck if it interfers here)
-
 package main
 
 import (
@@ -26,7 +21,7 @@ func exampleHabit() Habit {
 
 // ROOT
 func root(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "ROOT: %s!", r.URL.Path[1:])
+	fmt.Fprintf(w, "ROOT")
 }
 
 // API
@@ -39,26 +34,26 @@ func showHabits(w http.ResponseWriter, r *http.Request) {
 }
 
 /* TODO Routing to each endpoint
-   Read: GET /api/allHabits
-   Create: PUT /api/habit/?intervalType=0&description="Do the laundry"&lastPerformed="2014-10-10T08:49:53+00:00"
-   Update: POST /api/habit/67&description="Do the laundry"&lastPerformed="2014-10-10T08:49:53+00:00"
+
+   Read: GET /api/currentHabits
+   Create: PUT /api/createHabit?intervalType=0&description="Do the laundry"&lastPerformed="2014-10-10T08:49:53+00:00"
+   Update: POST /api/67&description="Do the laundry"&lastPerformed="2014-10-10T08:49:53+00:00"
    Delete: DELETE /api/habit/67
+
 */
 
-// TODO Actual persistence behind each endpoint
+// TODO Add actual persistence behind each endpoint
 
 // WEB
-// TODO show prettified html representation of habits
-// TODO add image/css assets (/public dir? /template dir? Route urls to those assets?)
 func webconsole(w http.ResponseWriter, r *http.Request) {
+	habits := [...]Habit{exampleHabit(), exampleHabit()}
 
-	habit := exampleHabit()
 	t, err := template.ParseFiles("webconsole.html")
 	if err != nil {
 		showErrorPage(w, err)
 		return
 	}
-	err = t.Execute(w, habit)
+	err = t.Execute(w, habits)
 	if err != nil {
 		showErrorPage(w, err)
 	}
