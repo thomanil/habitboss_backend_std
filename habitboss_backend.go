@@ -36,6 +36,8 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
+// WEB STUFF
+
 func root(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "ROOT")
 }
@@ -60,7 +62,8 @@ func showErrorPage(w http.ResponseWriter, err error) {
 
 // API ENDPOINTS
 
-// Example: http://localhost:8080/api/getHabits
+// Example:
+// http://localhost:8080/api/getHabits
 func getHabits(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	habits, _ := dbGetHabits()
@@ -69,7 +72,8 @@ func getHabits(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-// Example: http://localhost:8080/api/createHabit?intervalType=%222%22&description=%22Take%20a%20swim%22&lastPerformed=%222014-10-10T08:49:53+00:00%22
+// Example:
+// http://localhost:8080/api/createHabit?intervalType=%222%22&description=%22Take%20a%20swim%22&lastPerformed=%222014-10-10T08:49:53+00:00%22
 func createHabit(w http.ResponseWriter, r *http.Request) {
 	intervalType := r.URL.Query().Get("intervalType")
 	description := r.URL.Query().Get("description")
@@ -87,7 +91,8 @@ func createHabit(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Example: http://localhost:8080/api/updateHabit?id=27887&description=%22Clean%20the%20bathroom%22&lastPerformed=%222014-10-10T08:49:53+00:00%22
+// Example:
+// http://localhost:8080/api/updateHabit?id=27887&description=%22Clean%20the%20bathroom%22&lastPerformed=%222014-10-10T08:49:53+00:00%22
 func updateHabit(w http.ResponseWriter, r *http.Request) {
 	idToUpdate, _ := strconv.Atoi(r.URL.Query().Get("id"))
 	updatedDescription := r.URL.Query().Get("description")
@@ -109,7 +114,8 @@ func updateHabit(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Example: http://localhost:8080/api/deleteHabit?id=98081
+// Example:
+// http://localhost:8080/api/deleteHabit?id=98081
 func deleteHabit(w http.ResponseWriter, r *http.Request) {
 	idToDelete, _ := strconv.Atoi(r.URL.Query().Get("id"))
 
