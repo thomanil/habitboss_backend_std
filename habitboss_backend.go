@@ -31,10 +31,11 @@ func root(w http.ResponseWriter, r *http.Request) {
 
 // API
 func showHabits(w http.ResponseWriter, r *http.Request) {
-	// TODO avoid escaped quotes/str literals in json output?
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	habit := exampleHabit()
-	habitJson, _ := asJsonString(habit)
-	fmt.Fprintf(w, "%#v", habitJson)
+	habitJson, _ := json.Marshal(habit)
+	w.Write(habitJson)
+	return
 }
 
 /* TODO Routing to each endpoint
@@ -44,12 +45,13 @@ func showHabits(w http.ResponseWriter, r *http.Request) {
    Delete: DELETE /api/habit/67
 */
 
-/* TODO Actual persistence behind each endpoint */
+// TODO Actual persistence behind each endpoint
 
 // WEB
+// TODO show prettified html representation of habits
+// TODO add image/css assets (/public dir? /template dir? Route urls to those assets?)
 func webconsole(w http.ResponseWriter, r *http.Request) {
-	// TODO show prettified html representation of habits
-	// TODO add image/css assets (/public dir? /template dir? Route urls to those assets?)
+
 	habit := exampleHabit()
 	t, err := template.ParseFiles("webconsole.html")
 	if err != nil {
@@ -109,6 +111,5 @@ func loadFromFile() (Habit, error) {
 		return Habit{}, err
 	}
 
-	//TODO print first, see if it is intact
 	return habit, err
 }
