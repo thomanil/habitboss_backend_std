@@ -5,15 +5,12 @@
   </head>
   <body>
 
-
-
-
     <style>
     .timestamp {
-      color:gray;
+      color:green;
     }
     .id {
-      color:#9FFF87;
+      color:gray;
     }
     </style>
 
@@ -25,7 +22,7 @@
 {{range $element := .}}
       <li><span class="id">{{ $element.Id }}</span>
      {{ $element.Description }}
-      <em class="timestamp">{{ $element.LastPerformed }}</em></li>
+      <span class="timestamp">{{ $element.LastPerformed }}</span></li>
 {{ end }}
     </ul>
 

@@ -25,10 +25,13 @@ func exampleHabit() Habit {
 func main() {
 	http.HandleFunc("/", root)
 	http.HandleFunc("/webconsole", webconsole)
+
+	// NOTE: not really very RESt-ish!
 	http.HandleFunc("/api/getHabits", getHabits)
 	http.HandleFunc("/api/createHabit", createHabit)
 	http.HandleFunc("/api/updateHabit", updateHabit)
 	http.HandleFunc("/api/deleteHabit", deleteHabit)
+
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -37,7 +40,7 @@ func root(w http.ResponseWriter, r *http.Request) {
 }
 
 func webconsole(w http.ResponseWriter, r *http.Request) {
-	habits, _ := load()
+	habits, _ := dbGetHabits()
 
 	t, err := template.ParseFiles("webconsole.html")
 	if err != nil {
@@ -59,7 +62,7 @@ func showErrorPage(w http.ResponseWriter, err error) {
 // Example: http://localhost:8080/api/getHabits
 func getHabits(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	habits, _ := load()
+	habits, _ := dbGetHabits()
 	habitJson, _ := json.Marshal(habits)
 	w.Write(habitJson)
 	return
@@ -73,9 +76,7 @@ func createHabit(w http.ResponseWriter, r *http.Request) {
 
 	newHabit := Habit{Id: rand.Intn(100000000), IntervalType: intervalType, Description: description, LastPerformed: lastPerformed}
 
-	habits, _ := load()
-	habits = append(habits, newHabit)
-	err := persist(habits)
+	err := dbAdd(newHabit)
 
 	if err == nil {
 		fmt.Println("Successfully added: ", newHabit)
@@ -91,23 +92,14 @@ func updateHabit(w http.ResponseWriter, r *http.Request) {
 	updatedDescription := r.URL.Query().Get("description")
 	updatedLastPerformed := r.URL.Query().Get("lastPerformed")
 
-	habits, _ := load()
-
-	i, findErr := indexOf(idToUpdate, habits)
-	if findErr != nil {
+	if !dbExists(idToUpdate) {
 		fmt.Println("No habit with id: ", idToUpdate)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	// Update it
-	oldHabit := habits[i]
-	newHabit := Habit{Id: oldHabit.Id, IntervalType: oldHabit.IntervalType, Description: updatedDescription, LastPerformed: updatedLastPerformed}
-	oldHabit.Description = updatedDescription
-	oldHabit.LastPerformed = updatedLastPerformed
-	habits[i] = newHabit
+	err := dbUpdate(idToUpdate, updatedDescription, updatedLastPerformed)
 
-	err := persist(habits)
 	if err == nil {
 		fmt.Println("Successfully updated habit: ", idToUpdate)
 	} else {
@@ -120,19 +112,14 @@ func updateHabit(w http.ResponseWriter, r *http.Request) {
 func deleteHabit(w http.ResponseWriter, r *http.Request) {
 	idToDelete, _ := strconv.Atoi(r.URL.Query().Get("id"))
 
-	habits, _ := load()
-
-	i, findErr := indexOf(idToDelete, habits)
-	if findErr != nil {
+	if !dbExists(idToDelete) {
 		fmt.Println("No habit with id: ", idToDelete)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	// Remove it. Not exactly pretty, but most ideomatic I could find
-	habits = append(habits[:i], habits[i+1:]...)
+	err := dbDelete(idToDelete)
 
-	err := persist(habits)
 	if err == nil {
 		fmt.Println("Successfully removed habit: ", idToDelete)
 	} else {
@@ -142,9 +129,44 @@ func deleteHabit(w http.ResponseWriter, r *http.Request) {
 }
 
 // PERSISTENCE
+// Implemented as single array of habits written to plaintext json file
+// Should probably be mongodb in production :)
 
 func dbGetHabits() ([]Habit, error) {
 	return load()
+}
+
+func dbExists(id int) bool {
+	habits, loadErr := load()
+	if loadErr != nil {
+		return false
+	}
+	_, err := indexOf(id, habits)
+	return (err == nil)
+}
+
+func dbAdd(newHabit Habit) error {
+	habits, _ := load()
+	habits = append(habits, newHabit)
+	return persist(habits)
+}
+
+func dbUpdate(id int, updatedDescription string, updatedLastPerformed string) error {
+	habits, _ := load()
+	i, _ := indexOf(id, habits)
+	oldHabit := habits[i]
+	newHabit := Habit{Id: oldHabit.Id, IntervalType: oldHabit.IntervalType, Description: updatedDescription, LastPerformed: updatedLastPerformed}
+	oldHabit.Description = updatedDescription
+	oldHabit.LastPerformed = updatedLastPerformed
+	habits[i] = newHabit
+	return persist(habits)
+}
+
+func dbDelete(id int) error {
+	habits, _ := load()
+	i, _ := indexOf(id, habits)
+	habits = append(habits[:i], habits[i+1:]...)
+	return persist(habits)
 }
 
 const persistedFilename string = "habits.json"
