@@ -5,18 +5,19 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 )
 
 type Habit struct {
-	Id            string
+	Id            int
 	IntervalType  int
 	Description   string
 	LastPerformed string
 }
 
 func exampleHabit() Habit {
-	return Habit{Id: "12", IntervalType: 0, Description: "Walk the dog", LastPerformed: "2014-10-10T08:49:53+00:00"}
+	return Habit{Id: 12, IntervalType: 0, Description: "Walk the dog", LastPerformed: "2014-10-10T08:49:53+00:00"}
 }
 
 // ROOT
@@ -24,29 +25,77 @@ func root(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "ROOT")
 }
 
-// API
-func showHabits(w http.ResponseWriter, r *http.Request) {
+// API, basic routing
+func currentHabits(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	habit := exampleHabit()
-	habitJson, _ := json.Marshal(habit)
+	habits, _ := load()
+	habitJson, _ := json.Marshal(habits)
 	w.Write(habitJson)
 	return
 }
 
+func createHabit(w http.ResponseWriter, r *http.Request) {
+	habits, _ := load()
+
+	// TODO extract params from request params
+	id := rand.Intn(100000)
+	intervalType := 0
+	description := "Work out"
+	lastPerformed := "2014-10-10T08:49:53+00:00"
+
+	newHabit := Habit{Id: id, IntervalType: intervalType, Description: description, LastPerformed: lastPerformed}
+	habits = append(habits, newHabit)
+
+	err := persist(habits)
+	if err == nil {
+		fmt.Println("Successfully added: ", newHabit)
+	} else {
+		fmt.Println("Error while adding habit: ", newHabit)
+	}
+}
+
+func updateHabit(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func deleteHabit(w http.ResponseWriter, r *http.Request) {
+
+}
+
 /* TODO Routing to each endpoint
 
-   Read: GET /api/currentHabits
-   Create: PUT /api/createHabit?intervalType=0&description="Do the laundry"&lastPerformed="2014-10-10T08:49:53+00:00"
-   Update: POST /api/67&description="Do the laundry"&lastPerformed="2014-10-10T08:49:53+00:00"
-   Delete: DELETE /api/habit/67
+   Read: /currentHabits
+   Create: /createHabit?intervalType=0&description="Do the laundry"&lastPerformed="2014-10-10T08:49:53+00:00"
+   Update: /updateHabit?id=67&description="Do the laundry"&lastPerformed="2014-10-10T08:49:53+00:00"
+   Delete: /deleteHabit?id=67
+
+*/
+
+/*
+TODO gorilla mux:
+prettier routing, match and preserve parts of url, match on methods:
+
+/api/user/23/habit GET, PUT, POST, DELETE
 
 */
 
 // TODO Add actual persistence behind each endpoint
 
+func main() {
+	http.HandleFunc("/", root)
+	http.HandleFunc("/webconsole", webconsole)
+
+	http.HandleFunc("/api/currentHabits", currentHabits)
+	http.HandleFunc("/api/createHabit", createHabit)
+	http.HandleFunc("/api/updateHabit", updateHabit)
+	http.HandleFunc("/api/deleteHabit", deleteHabit)
+
+	http.ListenAndServe(":8080", nil)
+}
+
 // WEB
 func webconsole(w http.ResponseWriter, r *http.Request) {
-	habits := [...]Habit{exampleHabit(), exampleHabit()}
+	habits, _ := load()
 
 	t, err := template.ParseFiles("webconsole.html")
 	if err != nil {
@@ -63,47 +112,31 @@ func showErrorPage(w http.ResponseWriter, err error) {
 	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
 
-func main() {
-	http.HandleFunc("/", root)
-	http.HandleFunc("/webconsole", webconsole)
-	http.HandleFunc("/api/allHabits", showHabits)
-	http.ListenAndServe(":8080", nil)
-}
-
 // http://blog.golang.org/json-and-go
 // One file per habit, or just save/load all of them as a habit array?
 
 const persistedFilename string = "habits.json"
 
-func asJsonString(habit Habit) (string, error) {
-	jsonBytes, err := json.Marshal(habit)
-	if err != nil {
-		return "", err
-	}
-	jsonString := string(jsonBytes)
-	return jsonString, err
-}
-
-func saveToFile(habit *Habit) error {
-	filebody, err := json.Marshal(habit)
+func persist(habits []Habit) error {
+	filebody, err := json.Marshal(habits)
 	if err != nil {
 		return err
 	}
 	return ioutil.WriteFile(persistedFilename, filebody, 0600)
 }
 
-func loadFromFile() (Habit, error) {
+func load() ([]Habit, error) {
 	filebody, err := ioutil.ReadFile(persistedFilename)
 	if err != nil {
-		return Habit{}, err
+		return []Habit{}, err
 	}
 
 	filebodyBytes := []byte(filebody)
-	var habit Habit
+	var habit []Habit
 
 	err = json.Unmarshal(filebodyBytes, &habit)
 	if err != nil {
-		return Habit{}, err
+		return []Habit{}, err
 	}
 
 	return habit, err
