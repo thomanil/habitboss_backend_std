@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gorilla/mux"
 	"html/template"
 	"io/ioutil"
 	"math/rand"
@@ -24,15 +25,21 @@ func exampleHabit() Habit {
 }
 
 func main() {
-	http.HandleFunc("/", root)
-	http.HandleFunc("/webconsole", webconsole)
+	r := mux.NewRouter()
 
-	// NOTE: not really very RESt-ish!
-	http.HandleFunc("/api/getHabits", getHabits)
-	http.HandleFunc("/api/createHabit", createHabit)
-	http.HandleFunc("/api/updateHabit", updateHabit)
-	http.HandleFunc("/api/deleteHabit", deleteHabit)
+	r.HandleFunc("/", root)
+	r.HandleFunc("/webconsole", webconsole)
 
+	// Up front, lets us just respond to correct HTTP method
+	r.HandleFunc("/api/getHabits", getHabits).Methods("GET")
+	r.HandleFunc("/api/createHabit", createHabit).Methods("PUT")
+	r.HandleFunc("/api/updateHabit", createHabit).Methods("POST")
+	r.HandleFunc("/api/delete", createHabit).Methods("DELETE")
+
+	// We can do even better down the line:
+	// GET|PUT|POST|DELETE /api/user/{userId}/habit/{habitId}
+
+	http.Handle("/", r)
 	http.ListenAndServe(":8080", nil)
 }
 
