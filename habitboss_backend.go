@@ -130,8 +130,8 @@ func deleteHabit(w http.ResponseWriter, r *http.Request) {
 }
 
 // PERSISTENCE
-// Implemented as single array of habits written to plaintext json file
-// Should probably be mongodb in production :)
+// Implemented as single array of habits saved to flat file
+// Should probably be MongoDB or something in production :)
 
 func dbGetHabits() ([]Habit, error) {
 	return load()
@@ -213,7 +213,7 @@ func load() ([]Habit, error) {
 	return habits, err
 }
 
-// Implement sort-by-id type
+// Implement sort-by-id wrapper type for our habit model
 type ById []Habit
 
 func (a ById) Len() int           { return len(a) }
